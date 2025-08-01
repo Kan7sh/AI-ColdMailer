@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import z from "zod";
@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Trash2, Edit, Save, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 const UserProfileSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -42,14 +43,19 @@ const UserProfileSchema = z.object({
 
 type UserProfileData = z.infer<typeof UserProfileSchema>;
 
-export default function Profile() {
+interface ProfileProps {
+  onProfileSaved?: () => void;
+}
+
+export default function Profile({ onProfileSaved }: ProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const form = useForm<UserProfileData>({
     resolver: zodResolver(UserProfileSchema),
     defaultValues: {
-      name: "Kanish Chhabra",
-      phoneNumber: "+1234567890",
+      name: "",
+      phoneNumber: "",
       about: "",
       portfolioLink: "",
       educations: [
@@ -103,11 +109,105 @@ export default function Profile() {
     name: "projects",
   });
 
-  const onSubmit = (data: UserProfileData) => {
-    console.log("Saving profile:", data);
-    //TODO
-    setIsEditing(false);
+  // Load profile data on component mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const response = await fetch('/api/profile');
+        if (response.ok) {
+          const profileData = await response.json();
+          
+          // Set form data with loaded profile
+          form.reset({
+            name: profileData.user.name,
+            phoneNumber: profileData.user.phoneNumber,
+            about: profileData.user.about || "",
+            portfolioLink: profileData.user.portfolioLink || "",
+            educations: profileData.educations.length > 0 
+              ? profileData.educations.map((edu: any) => ({
+                  university: edu.university,
+                  grade: edu.grade || "",
+                  fieldOfStudy: edu.fieldOfStudy || "",
+                }))
+              : [{ university: "", grade: "", fieldOfStudy: "" }],
+            experiences: profileData.experiences.length > 0
+              ? profileData.experiences.map((exp: any) => ({
+                  companyName: exp.companyName,
+                  role: exp.role,
+                  duration: exp.duration,
+                  workContributed: exp.workContributed,
+                }))
+              : [{ companyName: "", role: "", duration: "", workContributed: "" }],
+            skills: profileData.skills.length > 0
+              ? profileData.skills.map((skill: any) => ({
+                  skillName: skill.skillName,
+                }))
+              : [{ skillName: "" }],
+            projects: profileData.projects.length > 0
+              ? profileData.projects.map((project: any) => ({
+                  projectName: project.projectName,
+                  techUsed: project.techUsed,
+                  description: project.description,
+                }))
+              : [{ projectName: "", techUsed: "", description: "" }],
+          });
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [form]);
+
+  const onSubmit = async (data: UserProfileData) => {
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user: {
+            name: data.name,
+            phoneNumber: data.phoneNumber,
+            about: data.about,
+            portfolioLink: data.portfolioLink,
+          },
+          educations: data.educations.filter(edu => edu.university.trim() !== ""),
+          experiences: data.experiences.filter(exp => exp.companyName.trim() !== ""),
+          skills: data.skills.filter(skill => skill.skillName.trim() !== ""),
+          projects: data.projects.filter(project => project.projectName.trim() !== ""),
+        }),
+      });
+
+      if (response.ok) {
+        toast.success("Profile saved successfully!");
+        setIsEditing(false);
+        // Call the callback to refresh user state in sidebar
+        onProfileSaved?.();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Failed to save profile");
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast.error("Failed to save profile");
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col w-full p-6 space-y-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg">Loading profile...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full p-6 space-y-6">

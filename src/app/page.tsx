@@ -8,16 +8,36 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 
 export default function Home() {
   const [currentSection, setCurrentSection] = useState<"dashboard" | "profile">("dashboard");
+  const [profileSaved, setProfileSaved] = useState(0);
+  const [selectedEmail, setSelectedEmail] = useState<any>(null);
+
+  const handleProfileClick = () => {
+    setCurrentSection("profile");
+  };
+
+  const handleEmailClick = (email: any) => {
+    setSelectedEmail(email);
+    setCurrentSection("dashboard");
+  };
+
+  const handleProfileSaved = () => {
+    // Trigger a re-render of the sidebar by updating the key
+    setProfileSaved(prev => prev + 1);
+  };
 
   return (
     <div>
       <SidebarProvider>
-        <AppSidebar onProfileClick={() => setCurrentSection("profile")} />
+        <AppSidebar 
+          key={profileSaved}
+          onProfileClick={handleProfileClick}
+          onEmailClick={handleEmailClick}
+        />
         <main className="w-full">
           {currentSection === "dashboard" ? (
-            <Dashboard />
+            <Dashboard selectedEmail={selectedEmail} />
           ) : (
-            <Profile />
+            <Profile onProfileSaved={handleProfileSaved} />
           )}
         </main>
       </SidebarProvider>

@@ -2,7 +2,7 @@ import { pgTable, serial, timestamp, varchar } from "drizzle-orm/pg-core";
 import { UserTable } from "./user";
 
 export const ProjectsTable = pgTable("project", {
-  id: serial().notNull(),
+  id: serial().primaryKey(),
   userId: serial()
     .notNull()
     .references(() => UserTable.id),
