@@ -109,7 +109,6 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
     name: "projects",
   });
 
-  // Load profile data on component mount
   useEffect(() => {
     const loadProfile = async () => {
       try {

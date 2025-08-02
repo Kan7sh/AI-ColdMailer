@@ -1,4 +1,5 @@
 "use client";
+
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +34,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "../ui/alert-dialog";
+import { createPrompt } from "@/service/createPrompt";
+import { getAIEmail } from "@/service/aiMailService";
+import { sendEmail } from "@/service/nodemailer";
 
 const RecipientFormSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -54,11 +58,118 @@ interface DashboardProps {
   selectedEmail?: any;
 }
 
+const UserProfileSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  phoneNumber: z.string().min(1, "Phone number is required"),
+  about: z.string().optional(),
+  portfolioLink: z.string().optional(),
+  educations: z.array(
+    z.object({
+      university: z.string().min(1, "University is required"),
+      grade: z.string().optional(),
+      fieldOfStudy: z.string().optional(),
+    })
+  ),
+  experiences: z.array(
+    z.object({
+      companyName: z.string().min(1, "Company name is required"),
+      role: z.string().min(1, "Role is required"),
+      duration: z.string().min(1, "Duration is required"),
+      workContributed: z.string().min(1, "Work contributed is required"),
+    })
+  ),
+  skills: z.array(
+    z.object({
+      skillName: z.string().min(1, "Skill name is required"),
+    })
+  ),
+  projects: z.array(
+    z.object({
+      projectName: z.string().min(1, "Project name is required"),
+      techUsed: z.string().min(1, "Tech used is required"),
+      description: z.string().min(1, "Description is required"),
+    })
+  ),
+});
+
+type UserProfileData = z.infer<typeof UserProfileSchema>;
+
 export default function Dashboard({ selectedEmail }: DashboardProps) {
   const [recipients, setRecipients] = useState<any[]>([]);
   const [isLoadingRecipients, setIsLoadingRecipients] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRecipient, setEditingRecipient] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [userData, setUserData] = useState<UserProfileData | null>(null);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const response = await fetch("/api/profile");
+        if (response.ok) {
+          const profileData = await response.json();
+
+          const user = UserProfileSchema.safeParse({
+            name: profileData.user.name,
+            phoneNumber: profileData.user.phoneNumber,
+            about: profileData.user.about || "",
+            portfolioLink: profileData.user.portfolioLink || "",
+            educations:
+              profileData.educations.length > 0
+                ? profileData.educations.map((edu: any) => ({
+                    university: edu.university,
+                    grade: edu.grade || "",
+                    fieldOfStudy: edu.fieldOfStudy || "",
+                  }))
+                : [{ university: "", grade: "", fieldOfStudy: "" }],
+            experiences:
+              profileData.experiences.length > 0
+                ? profileData.experiences.map((exp: any) => ({
+                    companyName: exp.companyName,
+                    role: exp.role,
+                    duration: exp.duration,
+                    workContributed: exp.workContributed,
+                  }))
+                : [
+                    {
+                      companyName: "",
+                      role: "",
+                      duration: "",
+                      workContributed: "",
+                    },
+                  ],
+            skills:
+              profileData.skills.length > 0
+                ? profileData.skills.map((skill: any) => ({
+                    skillName: skill.skillName,
+                  }))
+                : [{ skillName: "" }],
+            projects:
+              profileData.projects.length > 0
+                ? profileData.projects.map((project: any) => ({
+                    projectName: project.projectName,
+                    techUsed: project.techUsed,
+                    description: project.description,
+                  }))
+                : [{ projectName: "", techUsed: "", description: "" }],
+          });
+          if (user.success) {
+            setUserData(user.data);
+          } else {
+            toast.error("Not able to load user's profile");
+          }
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
 
   const form = useForm<RecipientFormData>({
     resolver: zodResolver(RecipientFormSchema),
@@ -156,6 +267,70 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
       console.error("Error deleting recipient:", error);
       toast.error("Failed to delete recipient");
     }
+  };
+
+  const sendEmailToUser = async (recipientIndex: number) => {
+    const recipient: RecipientFormData = recipients[recipientIndex];
+    if (!userData) {
+      toast.error("User profile not loaded");
+      return;
+    }
+    const prompt = createPrompt({
+      senderName: userData.name,
+      senderPhoneNumber: userData.phoneNumber,
+      aboutSender: userData.about,
+      senderPortfolio: userData.portfolioLink,
+      senderEducation: userData.educations?.map(
+        (edu) =>
+          `University: ${edu.university}${
+            edu.grade ? `, Grade: ${edu.grade}` : ""
+          }${edu.fieldOfStudy ? `, Field: ${edu.fieldOfStudy}` : ""}`
+      ),
+      senderExperiences: userData.experiences?.map(
+        (exp) =>
+          `Company: ${exp.companyName}, Role: ${exp.role}, Duration: ${exp.duration}, Work: ${exp.workContributed}`
+      ),
+      senderSkills: userData.skills?.map((skill) => skill.skillName),
+      senderProjects: userData.projects?.map(
+        (proj) =>
+          `Project: ${proj.projectName}, Tech: ${proj.techUsed}, Description: ${proj.description}`
+      ),
+      recipientName: recipient.name,
+      companyName: recipient.companyName,
+      positionForCompany: recipient.position,
+      areaOfInterest: recipient.areaOfInterest,
+      jobId: recipient.jobId,
+      includeProjects: recipient.includeProjects,
+      includePortfolio: recipient.includePortfolio,
+      includeEducation: recipient.includeEducation,
+      includePastExperiences: recipient.includePastExperience,
+      customPrompt: recipient.customPrompt,
+      attachmentsAdded: false,
+    });
+
+    console.log(prompt);
+
+    try {
+      const [subject, body] = await getAIEmail({ prompt });
+      console.log(subject);
+      console.log(body);
+      try {
+        await sendEmail({
+          senderEmail: selectedEmail.email,
+          recipientEmail: recipient.email,
+          subject,
+          body,
+          senderPassword: selectedEmail.passKey,
+        });
+      } catch (e) {
+        toast("There was an error sending the Email.");
+      }
+    } catch (e) {
+      toast("There was an error while generating the Email.");
+      return;
+    }
+
+    toast("Email Sent");
   };
 
   const onSubmit = async (data: RecipientFormData) => {
@@ -389,7 +564,7 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
             No recipients found for this email. Add your first recipient!
           </div>
         ) : (
-          recipients.map((recipient) => (
+          recipients.map((recipient, index) => (
             <div key={recipient.id} className="py-2">
               <Card className="p-5">
                 <div className="flex flex-row justify-between items-center">
@@ -457,7 +632,7 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
                         </div>
                       </PopoverContent>
                     </Popover>
-                    <Button>Send</Button>
+                    <Button onClick={() => sendEmailToUser(index)}>Send</Button>
                   </div>
                 </div>
               </Card>

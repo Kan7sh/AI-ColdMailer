@@ -5,7 +5,6 @@ import { eq } from "drizzle-orm";
 
 export async function GET() {
   try {
-    // Get the first user (since there's no auth, we'll use the first user)
     const user = await db.select().from(UserTable).limit(1);
     
     if (user.length === 0) {
@@ -14,7 +13,6 @@ export async function GET() {
 
     const userId = user[0].id;
 
-    // Get all emails for the user
     const emails = await db.select().from(EmailTable).where(eq(EmailTable.userId, userId));
 
     return NextResponse.json({ emails });

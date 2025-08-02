@@ -1,3 +1,5 @@
+"use server";
+
 import nodemailer from "nodemailer";
 
 export interface EmailOptions {
@@ -24,11 +26,15 @@ export async function sendEmail({
       },
     });
 
+    const htmlBody = body
+      .replace(/\n/g, "<br>")
+      .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;");
+
     const mailOptions = {
       from: senderEmail,
       to: recipientEmail,
       subject: subject,
-      html: body,
+      html: htmlBody,
     };
 
     const info = await transporter.sendMail(mailOptions);

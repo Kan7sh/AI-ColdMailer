@@ -66,7 +66,6 @@ export function AppSidebar({ onProfileClick, onEmailClick }: AppSidebarProps) {
     customPrompt: z.string().optional(),
   });
 
-  // Load emails on component mount and when user changes
   React.useEffect(() => {
     if (user) {
       loadEmails();

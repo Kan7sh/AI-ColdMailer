@@ -40,8 +40,9 @@ export function createPrompt({
   attachmentsAdded: boolean;
 }): string {
   let prompt = "";
-  const startingPrompt = process.env.STARTING_MANDATORY_PROMPT || "";
-  const endingPrompt = process.env.ENDING_MANDATORY_PROMPT || "";
+  const startingPrompt: string =
+    process.env.NEXT_PUBLIC_STARTING_MANDATORY_PROMPT!;
+  const endingPrompt: string = process.env.NEXT_PUBLIC_ENDING_MANDATORY_PROMPT!;
 
   prompt += startingPrompt;
 
@@ -57,14 +58,14 @@ export function createPrompt({
     prompt += " about sender - " + aboutSender + ", ";
   }
 
-  if (isValidParameter({ parameter: senderPortfolio }) && includePortfolio) {
+  if (isValidParameter({ parameter: senderPortfolio }) && !includePortfolio) {
     prompt += " add portoflioLink in description - " + senderPortfolio + ", ";
   }
 
   if (
     senderEducation != null &&
     senderEducation.length != 0 &&
-    includeEducation
+    !includeEducation
   ) {
     prompt += " Add about senders education - ";
     senderEducation.forEach((education) => {
@@ -76,7 +77,7 @@ export function createPrompt({
   if (
     senderExperiences != null &&
     senderExperiences.length != 0 &&
-    includePastExperiences
+    !includePastExperiences
   ) {
     prompt += " Add about senders professional Experience - ";
     senderExperiences.forEach((experience) => {
@@ -93,7 +94,11 @@ export function createPrompt({
     prompt += ". ";
   }
 
-  if (senderProjects != null && senderProjects.length != 0 && includeProjects) {
+  if (
+    senderProjects != null &&
+    senderProjects.length != 0 &&
+    !includeProjects
+  ) {
     prompt += " Add about senders projects - ";
     senderProjects.forEach((projects) => {
       prompt += projects + ", ";
