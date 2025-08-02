@@ -22,9 +22,21 @@ import { Label } from "../ui/label";
 import { Checkbox } from "../ui/checkbox";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../ui/alert-dialog";
 
 const RecipientFormSchema = z.object({
   email: z.string().email("Please enter a valid email"),
+  name: z.string().optional(),
   companyName: z.string().optional(),
   position: z.string().optional(),
   areaOfInterest: z.string().optional(),
@@ -52,6 +64,7 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
     resolver: zodResolver(RecipientFormSchema),
     defaultValues: {
       email: "",
+      name: "",
       companyName: "",
       position: "",
       areaOfInterest: "",
@@ -113,6 +126,7 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
     setEditingRecipient(recipient);
     form.reset({
       email: recipient.email,
+      name: recipient.name || "",
       companyName: recipient.companyName || "",
       position: recipient.position || "",
       areaOfInterest: recipient.areaOfInterest || "",
@@ -146,7 +160,6 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
 
   const onSubmit = async (data: RecipientFormData) => {
     try {
-      // Validate that we have a selected email
       if (!selectedEmail) {
         toast.error("Please select an email first");
         return;
@@ -266,16 +279,24 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
                     />
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="jobId">Job ID</Label>
-                  <Input
-                    id="jobId"
-                    placeholder="Enter job ID"
-                    {...form.register("jobId")}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="jobId">Job ID</Label>
+                    <Input
+                      id="jobId"
+                      placeholder="Enter job ID"
+                      {...form.register("jobId")}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Reciever name</Label>
+                    <Input
+                      id="name"
+                      placeholder="Enter name"
+                      {...form.register("name")}
+                    />
+                  </div>
                 </div>
-
                 <div className="space-y-3">
                   <Label>Include in Email</Label>
                   <div className="grid grid-cols-2 gap-2">
@@ -336,7 +357,7 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
         </div>
       </div>
       <Separator />
-      <Progress value={33} className="rounded-none " />
+      {/* <Progress value={33} className="rounded-none " /> */}
 
       <div className="mt-3 p-8">
         {!selectedEmail ? (
@@ -400,33 +421,39 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
                       </PopoverTrigger>
                       <PopoverContent className="w-32 p-0">
                         <div className="flex flex-col">
-                          {/* <AlertDialog>
-                             <AlertDialogTrigger asChild>
-                               <Button 
-                                 variant="ghost" 
-                                 className="text-xs w-full rounded-none text-red-500 hover:text-red-600"
-                               >
-                                 Delete
-                               </Button>
-                             </AlertDialogTrigger>
-                             <AlertDialogContent>
-                               <AlertDialogHeader>
-                                 <AlertDialogTitle>Delete Recipient</AlertDialogTitle>
-                                 <AlertDialogDescription>
-                                   Are you sure you want to delete "{recipient.email}"? This action cannot be undone.
-                                 </AlertDialogDescription>
-                               </AlertDialogHeader>
-                               <AlertDialogFooter>
-                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                 <AlertDialogAction
-                                   onClick={() => handleDeleteRecipient(recipient.id)}
-                                   className="bg-red-600 hover:bg-red-700"
-                                 >
-                                   Delete
-                                 </AlertDialogAction>
-                               </AlertDialogFooter>
-                             </AlertDialogContent>
-                           </AlertDialog> */}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="text-xs w-full rounded-none text-red-500 hover:text-red-600"
+                              >
+                                Delete
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Delete Recipient
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "
+                                  {recipient.email}"? This action cannot be
+                                  undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() =>
+                                    handleDeleteRecipient(recipient.id)
+                                  }
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </PopoverContent>
                     </Popover>

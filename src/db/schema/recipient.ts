@@ -1,4 +1,10 @@
-import { boolean, pgTable, serial, timestamp, varchar } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  pgTable,
+  serial,
+  timestamp,
+  varchar,
+} from "drizzle-orm/pg-core";
 import { EmailTable } from "./email";
 
 export const RecipientTable = pgTable("recipient", {
@@ -6,6 +12,7 @@ export const RecipientTable = pgTable("recipient", {
   senderEmailId: serial()
     .notNull()
     .references(() => EmailTable.id),
+  name: varchar(),
   email: varchar().notNull(),
   companyName: varchar(),
   position: varchar(),
@@ -16,6 +23,6 @@ export const RecipientTable = pgTable("recipient", {
   includeEducation: boolean().notNull(),
   includePastExperience: boolean().notNull(),
   customPrompt: varchar(),
-    createdAt:timestamp({ withTimezone: true }).notNull().defaultNow(),
-    updatedAt:timestamp({ withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });

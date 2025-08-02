@@ -34,6 +34,7 @@ import { Card } from "../ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { toast } from "sonner";
 import { useUser } from "@/hooks/use-user";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 // import {
 //   AlertDialog,
 //   AlertDialogAction,
@@ -311,7 +312,7 @@ export function AppSidebar({ onProfileClick, onEmailClick }: AppSidebarProps) {
                     >
                       Edit
                     </Button>
-                    {/* <AlertDialog>
+                    <AlertDialog>
                        <AlertDialogTrigger asChild>
                          <Button 
                            variant="ghost" 
@@ -337,7 +338,7 @@ export function AppSidebar({ onProfileClick, onEmailClick }: AppSidebarProps) {
                            </AlertDialogAction>
                          </AlertDialogFooter>
                        </AlertDialogContent>
-                     </AlertDialog> */}
+                     </AlertDialog>
                   </div>
                 </PopoverContent>
               </Popover>
