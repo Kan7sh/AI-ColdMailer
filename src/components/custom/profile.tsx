@@ -20,25 +20,33 @@ const UserProfileSchema = z.object({
   phoneNumber: z.string().min(1, "Phone number is required"),
   about: z.string().optional(),
   portfolioLink: z.string().optional(),
-  educations: z.array(z.object({
-    university: z.string().min(1, "University is required"),
-    grade: z.string().optional(),
-    fieldOfStudy: z.string().optional(),
-  })),
-  experiences: z.array(z.object({
-    companyName: z.string().min(1, "Company name is required"),
-    role: z.string().min(1, "Role is required"),
-    duration: z.string().min(1, "Duration is required"),
-    workContributed: z.string().min(1, "Work contributed is required"),
-  })),
-  skills: z.array(z.object({
-    skillName: z.string().min(1, "Skill name is required"),
-  })),
-  projects: z.array(z.object({
-    projectName: z.string().min(1, "Project name is required"),
-    techUsed: z.string().min(1, "Tech used is required"),
-    description: z.string().min(1, "Description is required"),
-  })),
+  educations: z.array(
+    z.object({
+      university: z.string().min(1, "University is required"),
+      grade: z.string().optional(),
+      fieldOfStudy: z.string().optional(),
+    })
+  ),
+  experiences: z.array(
+    z.object({
+      companyName: z.string().min(1, "Company name is required"),
+      role: z.string().min(1, "Role is required"),
+      duration: z.string().min(1, "Duration is required"),
+      workContributed: z.string().min(1, "Work contributed is required"),
+    })
+  ),
+  skills: z.array(
+    z.object({
+      skillName: z.string().min(1, "Skill name is required"),
+    })
+  ),
+  projects: z.array(
+    z.object({
+      projectName: z.string().min(1, "Project name is required"),
+      techUsed: z.string().min(1, "Tech used is required"),
+      description: z.string().min(1, "Description is required"),
+    })
+  ),
 });
 
 type UserProfileData = z.infer<typeof UserProfileSchema>;
@@ -58,18 +66,12 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
       phoneNumber: "",
       about: "",
       portfolioLink: "",
-      educations: [
-        { university: "", grade: "", fieldOfStudy: "" }
-      ],
+      educations: [{ university: "", grade: "", fieldOfStudy: "" }],
       experiences: [
-        { companyName: "", role: "", duration: "", workContributed: "" }
+        { companyName: "", role: "", duration: "", workContributed: "" },
       ],
-      skills: [
-        { skillName: "" }
-      ],
-      projects: [
-        { projectName: "", techUsed: "", description: "" }
-      ],
+      skills: [{ skillName: "" }],
+      projects: [{ projectName: "", techUsed: "", description: "" }],
     },
   });
 
@@ -112,43 +114,53 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const response = await fetch('/api/profile');
+        const response = await fetch("/api/profile");
         if (response.ok) {
           const profileData = await response.json();
-          
-          // Set form data with loaded profile
+
           form.reset({
             name: profileData.user.name,
             phoneNumber: profileData.user.phoneNumber,
             about: profileData.user.about || "",
             portfolioLink: profileData.user.portfolioLink || "",
-            educations: profileData.educations.length > 0 
-              ? profileData.educations.map((edu: any) => ({
-                  university: edu.university,
-                  grade: edu.grade || "",
-                  fieldOfStudy: edu.fieldOfStudy || "",
-                }))
-              : [{ university: "", grade: "", fieldOfStudy: "" }],
-            experiences: profileData.experiences.length > 0
-              ? profileData.experiences.map((exp: any) => ({
-                  companyName: exp.companyName,
-                  role: exp.role,
-                  duration: exp.duration,
-                  workContributed: exp.workContributed,
-                }))
-              : [{ companyName: "", role: "", duration: "", workContributed: "" }],
-            skills: profileData.skills.length > 0
-              ? profileData.skills.map((skill: any) => ({
-                  skillName: skill.skillName,
-                }))
-              : [{ skillName: "" }],
-            projects: profileData.projects.length > 0
-              ? profileData.projects.map((project: any) => ({
-                  projectName: project.projectName,
-                  techUsed: project.techUsed,
-                  description: project.description,
-                }))
-              : [{ projectName: "", techUsed: "", description: "" }],
+            educations:
+              profileData.educations.length > 0
+                ? profileData.educations.map((edu: any) => ({
+                    university: edu.university,
+                    grade: edu.grade || "",
+                    fieldOfStudy: edu.fieldOfStudy || "",
+                  }))
+                : [{ university: "", grade: "", fieldOfStudy: "" }],
+            experiences:
+              profileData.experiences.length > 0
+                ? profileData.experiences.map((exp: any) => ({
+                    companyName: exp.companyName,
+                    role: exp.role,
+                    duration: exp.duration,
+                    workContributed: exp.workContributed,
+                  }))
+                : [
+                    {
+                      companyName: "",
+                      role: "",
+                      duration: "",
+                      workContributed: "",
+                    },
+                  ],
+            skills:
+              profileData.skills.length > 0
+                ? profileData.skills.map((skill: any) => ({
+                    skillName: skill.skillName,
+                  }))
+                : [{ skillName: "" }],
+            projects:
+              profileData.projects.length > 0
+                ? profileData.projects.map((project: any) => ({
+                    projectName: project.projectName,
+                    techUsed: project.techUsed,
+                    description: project.description,
+                  }))
+                : [{ projectName: "", techUsed: "", description: "" }],
           });
         }
       } catch (error) {
@@ -164,10 +176,10 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
 
   const onSubmit = async (data: UserProfileData) => {
     try {
-      const response = await fetch('/api/profile', {
-        method: 'POST',
+      const response = await fetch("/api/profile", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           user: {
@@ -176,17 +188,22 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
             about: data.about,
             portfolioLink: data.portfolioLink,
           },
-          educations: data.educations.filter(edu => edu.university.trim() !== ""),
-          experiences: data.experiences.filter(exp => exp.companyName.trim() !== ""),
-          skills: data.skills.filter(skill => skill.skillName.trim() !== ""),
-          projects: data.projects.filter(project => project.projectName.trim() !== ""),
+          educations: data.educations.filter(
+            (edu) => edu.university.trim() !== ""
+          ),
+          experiences: data.experiences.filter(
+            (exp) => exp.companyName.trim() !== ""
+          ),
+          skills: data.skills.filter((skill) => skill.skillName.trim() !== ""),
+          projects: data.projects.filter(
+            (project) => project.projectName.trim() !== ""
+          ),
         }),
       });
 
       if (response.ok) {
         toast.success("Profile saved successfully!");
         setIsEditing(false);
-        // Call the callback to refresh user state in sidebar
         onProfileSaved?.();
       } else {
         const errorData = await response.json();
@@ -313,7 +330,13 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => appendEducation({ university: "", grade: "", fieldOfStudy: "" })}
+                    onClick={() =>
+                      appendEducation({
+                        university: "",
+                        grade: "",
+                        fieldOfStudy: "",
+                      })
+                    }
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Education
@@ -340,7 +363,9 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor={`educations.${index}.university`}>University *</Label>
+                      <Label htmlFor={`educations.${index}.university`}>
+                        University *
+                      </Label>
                       <Input
                         {...form.register(`educations.${index}.university`)}
                         disabled={!isEditing}
@@ -359,7 +384,9 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`educations.${index}.fieldOfStudy`}>Field of Study</Label>
+                    <Label htmlFor={`educations.${index}.fieldOfStudy`}>
+                      Field of Study
+                    </Label>
                     <Input
                       {...form.register(`educations.${index}.fieldOfStudy`)}
                       disabled={!isEditing}
@@ -382,7 +409,14 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => appendExperience({ companyName: "", role: "", duration: "", workContributed: "" })}
+                    onClick={() =>
+                      appendExperience({
+                        companyName: "",
+                        role: "",
+                        duration: "",
+                        workContributed: "",
+                      })
+                    }
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Experience
@@ -409,7 +443,9 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor={`experiences.${index}.companyName`}>Company Name *</Label>
+                      <Label htmlFor={`experiences.${index}.companyName`}>
+                        Company Name *
+                      </Label>
                       <Input
                         {...form.register(`experiences.${index}.companyName`)}
                         disabled={!isEditing}
@@ -418,7 +454,9 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor={`experiences.${index}.role`}>Role *</Label>
+                      <Label htmlFor={`experiences.${index}.role`}>
+                        Role *
+                      </Label>
                       <Input
                         {...form.register(`experiences.${index}.role`)}
                         disabled={!isEditing}
@@ -428,7 +466,9 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`experiences.${index}.duration`}>Duration *</Label>
+                    <Label htmlFor={`experiences.${index}.duration`}>
+                      Duration *
+                    </Label>
                     <Input
                       {...form.register(`experiences.${index}.duration`)}
                       disabled={!isEditing}
@@ -437,7 +477,9 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`experiences.${index}.workContributed`}>Work Contributed *</Label>
+                    <Label htmlFor={`experiences.${index}.workContributed`}>
+                      Work Contributed *
+                    </Label>
                     <Textarea
                       {...form.register(`experiences.${index}.workContributed`)}
                       disabled={!isEditing}
@@ -494,13 +536,14 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {form.watch("skills").map((skill, index) => (
-                    skill.skillName && (
-                      <Badge key={index} variant="secondary">
-                        {skill.skillName}
-                      </Badge>
-                    )
-                  ))}
+                  {form.watch("skills").map(
+                    (skill, index) =>
+                      skill.skillName && (
+                        <Badge key={index} variant="secondary">
+                          {skill.skillName}
+                        </Badge>
+                      )
+                  )}
                 </div>
               )}
             </CardContent>
@@ -515,7 +558,13 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => appendProject({ projectName: "", techUsed: "", description: "" })}
+                    onClick={() =>
+                      appendProject({
+                        projectName: "",
+                        techUsed: "",
+                        description: "",
+                      })
+                    }
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Project
@@ -542,7 +591,9 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor={`projects.${index}.projectName`}>Project Name *</Label>
+                      <Label htmlFor={`projects.${index}.projectName`}>
+                        Project Name *
+                      </Label>
                       <Input
                         {...form.register(`projects.${index}.projectName`)}
                         disabled={!isEditing}
@@ -551,7 +602,9 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor={`projects.${index}.techUsed`}>Tech Used *</Label>
+                      <Label htmlFor={`projects.${index}.techUsed`}>
+                        Tech Used *
+                      </Label>
                       <Input
                         {...form.register(`projects.${index}.techUsed`)}
                         disabled={!isEditing}
@@ -561,7 +614,9 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`projects.${index}.description`}>Description *</Label>
+                    <Label htmlFor={`projects.${index}.description`}>
+                      Description *
+                    </Label>
                     <Textarea
                       {...form.register(`projects.${index}.description`)}
                       disabled={!isEditing}
@@ -577,4 +632,4 @@ export default function Profile({ onProfileSaved }: ProfileProps) {
       </Tabs>
     </div>
   );
-} 
+}

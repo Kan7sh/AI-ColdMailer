@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Email ID is required" }, { status: 400 });
     }
 
-    // Get all recipients for the specific email
     const recipients = await db.select().from(RecipientTable).where(eq(RecipientTable.senderEmailId, parseInt(emailId)));
 
     return NextResponse.json({ recipients });
@@ -39,7 +38,6 @@ export async function POST(request: NextRequest) {
       customPrompt 
     } = body;
 
-    // Insert new recipient
     const [newRecipient] = await db.insert(RecipientTable).values({
       senderEmailId: parseInt(senderEmailId),
       email,

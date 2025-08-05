@@ -27,7 +27,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { email, passKey, customPrompt } = body;
 
-    // Get the first user
     const user = await db.select().from(UserTable).limit(1);
     
     if (user.length === 0) {
@@ -36,7 +35,6 @@ export async function POST(request: NextRequest) {
 
     const userId = user[0].id;
 
-    // Insert new email
     const [newEmail] = await db.insert(EmailTable).values({
       userId,
       email,

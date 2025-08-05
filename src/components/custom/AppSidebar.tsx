@@ -34,18 +34,17 @@ import { Card } from "../ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { toast } from "sonner";
 import { useUser } from "@/hooks/use-user";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
-// import {
-//   AlertDialog,
-//   AlertDialogAction,
-//   AlertDialogCancel,
-//   AlertDialogContent,
-//   AlertDialogDescription,
-//   AlertDialogFooter,
-//   AlertDialogHeader,
-//   AlertDialogTitle,
-//   AlertDialogTrigger,
-// } from "../ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../ui/alert-dialog";
 
 interface AppSidebarProps {
   onProfileClick?: () => void;
@@ -312,32 +311,34 @@ export function AppSidebar({ onProfileClick, onEmailClick }: AppSidebarProps) {
                       Edit
                     </Button>
                     <AlertDialog>
-                       <AlertDialogTrigger asChild>
-                         <Button 
-                           variant="ghost" 
-                           className="text-xs w-full rounded-none text-red-500 hover:text-red-600"
-                         >
-                           Delete
-                         </Button>
-                       </AlertDialogTrigger>
-                       <AlertDialogContent>
-                         <AlertDialogHeader>
-                           <AlertDialogTitle>Delete Email</AlertDialogTitle>
-                           <AlertDialogDescription>
-                             Are you sure you want to delete "{email.email}"? This action cannot be undone and will also delete all associated recipients.
-                           </AlertDialogDescription>
-                         </AlertDialogHeader>
-                         <AlertDialogFooter>
-                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                           <AlertDialogAction
-                             onClick={() => handleDeleteEmail(email.id)}
-                             className="bg-red-600 hover:bg-red-700"
-                           >
-                             Delete
-                           </AlertDialogAction>
-                         </AlertDialogFooter>
-                       </AlertDialogContent>
-                     </AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="text-xs w-full rounded-none text-red-500 hover:text-red-600"
+                        >
+                          Delete
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Email</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete "{email.email}"?
+                            This action cannot be undone and will also delete
+                            all associated recipients.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteEmail(email.id)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </PopoverContent>
               </Popover>

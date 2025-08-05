@@ -12,7 +12,6 @@ export async function PUT(
     const { email, passKey, customPrompt } = body;
     const emailId = parseInt(params.id);
 
-    // Update email
     const [updatedEmail] = await db.update(EmailTable)
       .set({
         email,
@@ -41,7 +40,6 @@ export async function DELETE(
   try {
     const emailId = parseInt(params.id);
 
-    // Delete email
     const [deletedEmail] = await db.delete(EmailTable)
       .where(eq(EmailTable.id, emailId))
       .returning();

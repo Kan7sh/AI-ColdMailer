@@ -5,7 +5,6 @@ import { eq } from "drizzle-orm";
 
 export async function GET() {
   try {
-    // Get the first user (since there's no auth, we'll use the first user)
     const user = await db.select().from(UserTable).limit(1);
     
     if (user.length === 0) {
@@ -14,7 +13,6 @@ export async function GET() {
 
     const userId = user[0].id;
 
-    // Get all related data
     const [educations, experiences, skills, projects] = await Promise.all([
       db.select().from(EducationTable).where(eq(EducationTable.userId, userId)),
       db.select().from(PastExperienceTable).where(eq(PastExperienceTable.userId, userId)),
@@ -40,11 +38,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { user, educations, experiences, skills, projects } = body;
 
-    // Check if user exists
     const existingUser = await db.select().from(UserTable).limit(1);
     
     if (existingUser.length === 0) {
-      // Create new user
       const [newUser] = await db.insert(UserTable).values({
         name: user.name,
         phoneNumber: user.phoneNumber,
@@ -54,7 +50,6 @@ export async function POST(request: NextRequest) {
 
       const userId = newUser.id;
 
-      // Insert related data
       if (educations && educations.length > 0) {
         await db.insert(EducationTable).values(
           educations.map((edu: any) => ({
@@ -98,7 +93,6 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      // Update existing user
       const userId = existingUser[0].id;
       
       await db.update(UserTable)
@@ -111,7 +105,6 @@ export async function POST(request: NextRequest) {
         })
         .where(eq(UserTable.id, userId));
 
-      // Delete existing related data
       await Promise.all([
         db.delete(EducationTable).where(eq(EducationTable.userId, userId)),
         db.delete(PastExperienceTable).where(eq(PastExperienceTable.userId, userId)),
@@ -119,7 +112,6 @@ export async function POST(request: NextRequest) {
         db.delete(ProjectsTable).where(eq(ProjectsTable.userId, userId)),
       ]);
 
-      // Insert new related data
       if (educations && educations.length > 0) {
         await db.insert(EducationTable).values(
           educations.map((edu: any) => ({

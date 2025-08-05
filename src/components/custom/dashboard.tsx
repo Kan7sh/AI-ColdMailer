@@ -50,6 +50,15 @@ const RecipientFormSchema = z.object({
   includeEducation: z.boolean(),
   includePastExperience: z.boolean(),
   customPrompt: z.string().optional(),
+  attachments: z
+    .array(
+      z.object({
+        id: z.number().optional(),
+        fileName: z.string(),
+        fileLocation: z.string(),
+      })
+    )
+    .optional(),
 });
 
 type RecipientFormData = z.infer<typeof RecipientFormSchema>;
@@ -100,6 +109,11 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRecipient, setEditingRecipient] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<any[]>([]);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
+  const [isSendingAll, setIsSendingAll] = useState(false);
+  const [sendProgress, setSendProgress] = useState(0);
 
   const [userData, setUserData] = useState<UserProfileData | null>(null);
 
@@ -185,8 +199,82 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
       includeEducation: false,
       includePastExperience: false,
       customPrompt: "",
+      attachments: [],
     },
   });
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      setAttachments((prev) => [...prev, ...Array.from(files)]);
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingAttachment = async (attachmentId: number) => {
+    try {
+      const response = await fetch(`/api/attachments/${attachmentId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setExistingAttachments((prev) =>
+          prev.filter((att) => att.id !== attachmentId)
+        );
+        toast.success("Attachment removed successfully");
+      } else {
+        toast.error("Failed to remove attachment");
+      }
+    } catch (error) {
+      console.error("Error removing attachment:", error);
+      toast.error("Failed to remove attachment");
+    }
+  };
+
+  const uploadAttachments = async (recipientId: number) => {
+    if (attachments.length === 0) return;
+
+    setUploadingAttachments(true);
+    const formData = new FormData();
+
+    attachments.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    formData.append("recipientId", recipientId.toString());
+
+    try {
+      const response = await fetch("/api/attachments", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload attachments");
+      }
+
+      return await response.json();
+    } finally {
+      setUploadingAttachments(false);
+    }
+  };
+
+  const loadAttachments = async (recipientId: number) => {
+    try {
+      const response = await fetch(
+        `/api/attachments?recipientId=${recipientId}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setExistingAttachments(data.attachments);
+      }
+    } catch (error) {
+      console.error("Error loading attachments:", error);
+    }
+  };
 
   useEffect(() => {
     if (selectedEmail) {
@@ -235,6 +323,8 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
 
   const handleEditRecipient = (recipient: any) => {
     setEditingRecipient(recipient);
+    setAttachments([]);
+    loadAttachments(recipient.id);
     form.reset({
       email: recipient.email,
       name: recipient.name || "",
@@ -269,11 +359,44 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
     }
   };
 
-  const sendEmailToUser = async (recipientIndex: number) => {
+  const sendAllEmails = async () => {
+    if (recipients.length === 0) {
+      toast.error("No recipients found");
+      return;
+    }
+
+    setIsSendingAll(true);
+    setSendProgress(0);
+
+    for (let i = 0; i < recipients.length; i++) {
+      try {
+        await sendEmailToUser(i, recipients[i].id);
+        setSendProgress(((i + 1) / recipients.length) * 100);
+      } catch (error) {
+        console.error(`Failed to send email to ${recipients[i].email}:`, error);
+      }
+    }
+
+    setIsSendingAll(false);
+    toast.success("All emails sent successfully!");
+  };
+
+  const sendEmailToUser = async (recipientIndex: number, recipientId: any) => {
     const recipient: RecipientFormData = recipients[recipientIndex];
     if (!userData) {
       toast.error("User profile not loaded");
       return;
+    }
+    const attachmentsResponse = await fetch(
+      `/api/attachments?recipientId=${recipientId}`
+    );
+    let recipientAttachments = [];
+    if (attachmentsResponse.ok) {
+      const attachmentsData = await attachmentsResponse.json();
+      recipientAttachments = attachmentsData.attachments.map((att: any) => ({
+        filename: att.fileName,
+        path: att.fileLocation,
+      }));
     }
     const prompt = createPrompt({
       senderName: userData.name,
@@ -305,7 +428,7 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
       includeEducation: recipient.includeEducation,
       includePastExperiences: recipient.includePastExperience,
       customPrompt: recipient.customPrompt,
-      attachmentsAdded: false,
+      attachmentsAdded: recipientAttachments.length > 0,
     });
 
     console.log(prompt);
@@ -321,6 +444,7 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
           subject,
           body,
           senderPassword: selectedEmail.passKey,
+          attachments: recipientAttachments,
         });
       } catch (e) {
         toast("There was an error sending the Email.");
@@ -344,6 +468,7 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
         ? `/api/recipients/${editingRecipient.id}`
         : "/api/recipients";
       const method = editingRecipient ? "PUT" : "POST";
+      console.log(data);
 
       const response = await fetch(url, {
         method,
@@ -357,6 +482,14 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
       });
 
       if (response.ok) {
+        const result = await response.json();
+        const recipientId = editingRecipient
+          ? editingRecipient.id
+          : result.recipient.id;
+
+        if (attachments.length > 0) {
+          await uploadAttachments(recipientId);
+        }
         toast.success(
           editingRecipient
             ? "Recipient updated successfully"
@@ -387,6 +520,13 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
           )}
         </div>
         <div className="flex flex-row gap-2">
+          <Button
+            variant="default"
+            onClick={sendAllEmails}
+            disabled={!selectedEmail || recipients.length === 0 || isSendingAll}
+          >
+            {isSendingAll ? "Sending..." : "Send All"}
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button variant={"outline"} onClick={handleAddRecipient}>
@@ -478,14 +618,20 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="includeProjects"
-                        {...form.register("includeProjects")}
+                        checked={form.watch("includeProjects")}
+                        onCheckedChange={(checked) =>
+                          form.setValue("includeProjects", !!checked)
+                        }
                       />
                       <Label htmlFor="includeProjects">Include Projects</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="includePortfolio"
-                        {...form.register("includePortfolio")}
+                        checked={form.watch("includePortfolio")}
+                        onCheckedChange={(checked) =>
+                          form.setValue("includePortfolio", !!checked)
+                        }
                       />
                       <Label htmlFor="includePortfolio">
                         Include Portfolio
@@ -494,7 +640,10 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="includeEducation"
-                        {...form.register("includeEducation")}
+                        checked={form.watch("includeEducation")}
+                        onCheckedChange={(checked) =>
+                          form.setValue("includeEducation", !!checked)
+                        }
                       />
                       <Label htmlFor="includeEducation">
                         Include Education
@@ -503,7 +652,10 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         id="includePastExperience"
-                        {...form.register("includePastExperience")}
+                        checked={form.watch("includePastExperience")}
+                        onCheckedChange={(checked) =>
+                          form.setValue("includePastExperience", !!checked)
+                        }
                       />
                       <Label htmlFor="includePastExperience">
                         Include Past Experience
@@ -520,6 +672,75 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
                     {...form.register("customPrompt")}
                   />
                 </div>
+                <div className="space-y-3">
+                  <Label>Attachments</Label>
+
+                  {/* Existing Attachments */}
+                  {existingAttachments.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-sm text-muted-foreground">
+                        Current attachments:
+                      </div>
+                      {existingAttachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="flex items-center justify-between p-2 border rounded"
+                        >
+                          <span className="text-sm">{attachment.fileName}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              removeExistingAttachment(attachment.id)
+                            }
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* New Attachments */}
+                  {attachments.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-sm text-muted-foreground">
+                        New attachments:
+                      </div>
+                      {attachments.map((file, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-2 border rounded"
+                        >
+                          <span className="text-sm">{file.name}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeAttachment(index)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div>
+                    <Input
+                      type="file"
+                      multiple
+                      onChange={handleFileSelect}
+                      className="cursor-pointer"
+                    />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      You can select multiple files
+                    </div>
+                  </div>
+                </div>
 
                 <DialogFooter>
                   <Button type="submit">
@@ -532,8 +753,9 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
         </div>
       </div>
       <Separator />
-      {/* <Progress value={33} className="rounded-none " /> */}
-
+      {isSendingAll && (
+        <Progress value={sendProgress} className="rounded-none" />
+      )}
       <div className="mt-3 p-8">
         {!selectedEmail ? (
           <div className="text-center text-muted-foreground py-8">
@@ -632,7 +854,11 @@ export default function Dashboard({ selectedEmail }: DashboardProps) {
                         </div>
                       </PopoverContent>
                     </Popover>
-                    <Button onClick={() => sendEmailToUser(index)}>Send</Button>
+                    <Button
+                      onClick={() => sendEmailToUser(index, recipient.id)}
+                    >
+                      Send
+                    </Button>
                   </div>
                 </div>
               </Card>

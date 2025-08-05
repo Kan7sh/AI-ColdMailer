@@ -7,7 +7,9 @@ import Profile from "@/components/custom/profile";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 export default function Home() {
-  const [currentSection, setCurrentSection] = useState<"dashboard" | "profile">("dashboard");
+  const [currentSection, setCurrentSection] = useState<"dashboard" | "profile">(
+    "dashboard"
+  );
   const [profileSaved, setProfileSaved] = useState(0);
   const [selectedEmail, setSelectedEmail] = useState<any>(null);
 
@@ -21,14 +23,13 @@ export default function Home() {
   };
 
   const handleProfileSaved = () => {
-    // Trigger a re-render of the sidebar by updating the key
-    setProfileSaved(prev => prev + 1);
+    setProfileSaved((prev) => prev + 1);
   };
 
   return (
     <div>
       <SidebarProvider>
-        <AppSidebar 
+        <AppSidebar
           key={profileSaved}
           onProfileClick={handleProfileClick}
           onEmailClick={handleEmailClick}

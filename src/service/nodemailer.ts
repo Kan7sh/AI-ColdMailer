@@ -8,6 +8,12 @@ export interface EmailOptions {
   subject: string;
   body: string;
   senderPassword: string;
+  attachments:EmailAttachment[]
+}
+
+interface EmailAttachment {
+  filename: string;
+  path: string; 
 }
 
 export async function sendEmail({
@@ -16,6 +22,7 @@ export async function sendEmail({
   subject,
   body,
   senderPassword,
+  attachments
 }: EmailOptions): Promise<void> {
   try {
     const transporter = nodemailer.createTransport({
@@ -35,6 +42,7 @@ export async function sendEmail({
       to: recipientEmail,
       subject: subject,
       html: htmlBody,
+      attachments,
     };
 
     const info = await transporter.sendMail(mailOptions);
